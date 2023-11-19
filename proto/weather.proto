@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+message RequestRegister {
+    string username = 1;
+    string password = 2;
+    string name = 3;
+    string email = 4;
+}
+
+message ResponseRegister{
+    string message = 1;
+    bool success = 2;
+}
+
+message RequestLogin {
+    string username = 1;
+    string password = 2;
+}
+
+service WeatherService{
+    rpc Register(RequestRegister) returns (ResponseRegister){};
+    rpc Login(RequestRegister) returns (ResponseRegister){};
+}
