@@ -1,7 +1,8 @@
-package mongodb
+package config_mongodb
 
 import (
 	"context"
+	"fmt"
 	config_builder "github.com/bulutcan99/grpc_weather/pkg/config"
 	"github.com/bulutcan99/grpc_weather/pkg/env"
 	"github.com/bulutcan99/grpc_weather/pkg/utility"
@@ -29,6 +30,7 @@ type Mongo struct {
 func NewConnetion() *Mongo {
 	ctx := context.Background()
 	mongoCon, err := config_builder.ConnectionURLBuilder("mongo")
+	fmt.Println(mongoCon)
 	if err != nil {
 		panic(err)
 	}

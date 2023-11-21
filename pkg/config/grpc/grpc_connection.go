@@ -1,8 +1,7 @@
-package grpc
+package config_grpc
 
 import (
-	"context"
-	"fmt"
+	"github.com/bulutcan99/grpc_weather/cmd/server"
 	config_builder "github.com/bulutcan99/grpc_weather/pkg/config"
 	pb "github.com/bulutcan99/grpc_weather/proto"
 	"go.uber.org/zap"
@@ -27,7 +26,7 @@ func StartGRPCServer() {
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
 
-	pb.RegisterWeatherServiceServer(grpcServer, &GrpcServer{})
+	pb.RegisterWeatherServiceServer(grpcServer, &server.GrpcServer{})
 
 	go func() {
 		if err := grpcServer.Serve(lis); err != nil {
@@ -42,19 +41,4 @@ func StartGRPCServer() {
 	zap.S().Info("Shutting down the gRPC server...")
 	grpcServer.GracefulStop()
 	zap.S().Info("gRPC server stopped.")
-}
-
-type GrpcServer struct {
-	pb.UnimplementedWeatherServiceServer
-}
-
-func (s *GrpcServer) Register(ctx context.Context, req *pb.RequestRegister) (*pb.ResponseRegister, error) {
-	if req.Username == "" {
-		return nil, fmt.Errorf("username cannot be empty")
-	}
-	return &pb.ResponseRegister{
-		Username: req.Username,
-		Name:     req.Name,
-		Success:  true,
-	}, nil
 }

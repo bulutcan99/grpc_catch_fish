@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    restart: unless-stopped
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: adminuser
+      MONGO_INITDB_ROOT_PASSWORD: adminpass
+      MONGO_INITDB_DATABASE: admin
+    ports:
+      - "27017:27017"
+    networks:
+      - products_network
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    command: redis-server --requirepass myredispassword
+    ports:
+      - "6379:6379"
+    networks:
+      - products_network
+
+  rabbitmq:
+    image: rabbitmq:latest
+    restart: unless-stopped
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - products_network
+
+  backend:
+    build: ./
+    restart: always
+    depends_on:
+      - rabbitmq
+      - mongodb
+      - redis
+    env_file:
+      - ./.env
+    environment:
+      SERVER_HOST: localhost
+      GRPC_PORT: 50051
+      DB_PORT: 27017
+      DB_NAME: test
+      COLLECTION: users
+      PREFETCH_COUNT: 1000
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: my_redis_password
+      REDIS_DB_NUMBER: 0
+      LOG_LEVEL: DEBUG
+    ports:
+      - "8080:8080"
+    networks:
+      - products_network
+
+volumes:
+  kafka_data:
+    driver: local
+
+networks:
+  products_network:
+    driver: bridge
+
+  # frontend:
+  #   build: ./client
+  #   restart: always
+  #   depends_on:
+  #     - backendnw
+  #   env_file:
+  #     - ./client/.env.local
+  #   environment:
+  #     BASE_URL: http://backend:8080
+  #   ports:
+  #     - "3000:3000"
