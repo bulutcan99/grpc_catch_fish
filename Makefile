@@ -22,18 +22,44 @@ test: clean critic security lint
 build: test
 	CGO_ENABLED=0 go build -ldflags="-w -s" -o $(BUILD_DIR)/$(APP_NAME) main.go
 
-generate:
-	protoc -I. --go_out=. --go_opt=paths=source_relative \
-        --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-        proto/weather.proto
-
-docker.run: docker.mongo
+docker.run: docker.mongo docker.rabbitmq docker.redis
+docker.stop: docker.mongo.stop docker.rabbitmq.stop docker.redis.stop
 
 docker.mongo:
 	docker run --rm -d \
 		--name cgapp-mongo \
 		-p 27017:27017 \
 		mongo
+
+docker.mongo.stop:
+	docker stop cgapp-mongo
+
+docker.rabbitmq:
+	docker run --rm -d \
+        --name cgapp-rabbitmq \
+        -p 5672:5672 \
+        -p 15672:15672 \
+        -e RABBITMQ_DEFAULT_USER=guest \
+        -e RABBITMQ_DEFAULT_PASS=guest \
+        rabbitmq:3-management
+
+docker.rabbitmq.stop:
+	docker stop cgapp-rabbitmq
+
+docker.redis:
+	docker run --rm -d \
+        --name cgapp-redis \
+        -p 6379:6379 \
+        -e REDIS_PASSWORD=myredispassword \
+        redis
+
+docker.redis.stop:
+	docker stop cgapp-redis
+
+generate:
+	protoc -I. --go_out=. --go_opt=paths=source_relative \
+        --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+        proto/weather.proto
 
 clean-proto:
 	rm proto/*.pb.go;

@@ -2,14 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/bulutcan99/grpc_weather/internal/fetch"
 	config_mongodb "github.com/bulutcan99/grpc_weather/pkg/config/mongodb"
 	config_rabbitmq "github.com/bulutcan99/grpc_weather/pkg/config/rabbitmq"
 	config_redis "github.com/bulutcan99/grpc_weather/pkg/config/redis"
 	"github.com/bulutcan99/grpc_weather/pkg/env"
 	"github.com/bulutcan99/grpc_weather/pkg/logger"
 	"go.uber.org/zap"
-	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -39,45 +38,19 @@ func main() {
 	defer Redis.Close()
 	defer RabbitMQ.Close()
 
-	apiURL := "http://api.weatherapi.com/v1/current.json?key=5e991bddf944431e858131733232111&q=London&aqi=no"
-
-	response, err := http.Get(apiURL)
-	if err != nil {
-		zap.S().Error("API Request failed: ", err)
-		return
-	}
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		zap.S().Error("API response failed: ", err)
-		return
-	}
-
-	var data map[string]interface{}
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		zap.S().Error("There is an error while parsing data: ", err)
-		return
-	}
-
-	zap.S().Info("Data: ", data)
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-
+	data, err := fetch.FetchDefaultWeather()
+	if err != nil {
+		zap.S().Error("Error while fetching data: ", err)
+	}
+	zap.S().Info("Data: ", data)
 	var wg sync.WaitGroup
 	wg.Add(1)
 
 	server := &http.Server{
-		Addr: ":8080",
+		Addr: ":8081",
 	}
-
-	http.HandleFunc("/api/example/data", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(data)
-	})
 
 	go func() {
 		defer wg.Done()
@@ -91,13 +64,11 @@ func main() {
 
 	zap.S().Info("Shutting down server...")
 
-	// Sunucuyu kapat
 	err = server.Shutdown(context.Background())
 	if err != nil {
 		zap.S().Fatal("Sunucu kapatma hatası: ", err)
 	}
 
-	// WaitGroup bekleme sürecini tamamla
 	wg.Wait()
 
 	zap.S().Info("Server gracefully stopped")
