@@ -61,15 +61,12 @@ func main() {
 	}()
 
 	<-ctx.Done()
-
 	zap.S().Info("Shutting down server...")
-
-	err = server.Shutdown(context.Background())
+	err = server.Shutdown(ctx)
 	if err != nil {
 		zap.S().Fatal("Sunucu kapatma hatası: ", err)
 	}
 
 	wg.Wait()
-
 	zap.S().Info("Server gracefully stopped")
 }

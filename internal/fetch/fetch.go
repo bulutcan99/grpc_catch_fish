@@ -1,23 +1,24 @@
 package fetch
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/bulutcan99/grpc_weather/dto"
+	"github.com/bulutcan99/grpc_weather/pkg/env"
+	decoder "github.com/goccy/go-json"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
 
-const (
-	apiURL      = "http://api.weatherapi.com/v1/current.json"
-	apiKey      = "5e991bddf944431e858131733232111"
-	defaultCity = "London"
+var (
+	apiURL      = &env.Env.WeatherUrl
+	apiKey      = &env.Env.WeatherApiKey
+	defaultCity = &env.Env.DefaultWeatherCity
 )
 
 func buildURL(city string) string {
-	return fmt.Sprintf("%s?key=%s&q=%s&aqi=no", apiURL, apiKey, city)
+	return fmt.Sprintf("%s?key=%s&q=%s&aqi=no", *apiURL, *apiKey, city)
 }
 
 func fetchData(url string) ([]byte, error) {
@@ -25,6 +26,7 @@ func fetchData(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer response.Body.Close()
 
 	body, err := io.ReadAll(response.Body)
@@ -37,8 +39,7 @@ func fetchData(url string) ([]byte, error) {
 
 func parseData(data []byte) (dto.WeatherData, error) {
 	var result dto.WeatherData
-	err := json.Unmarshal(data, &result)
-	if err != nil {
+	if err := decoder.Unmarshal(data, &result); err != nil {
 		return dto.WeatherData{}, err
 	}
 
@@ -64,5 +65,5 @@ func FetchWeather(city string) (dto.WeatherData, error) {
 }
 
 func FetchDefaultWeather() (dto.WeatherData, error) {
-	return FetchWeather(defaultCity)
+	return FetchWeather(*defaultCity)
 }
