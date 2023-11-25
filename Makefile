@@ -22,6 +22,18 @@ test: clean critic security lint
 build: test
 	CGO_ENABLED=0 go build -ldflags="-w -s" -o $(BUILD_DIR)/$(APP_NAME) main.go
 
+run-server:
+	go run cmd/server/main.go
+
+run-client:
+	go run cmd/client/main.go
+
+auto-run-server:
+	ls cmd/server/*.go | entr -r go run cmd/server/main.go
+
+auto-run-client:
+	ls cmd/client/*.go | entr -r go run cmd/client/main.go
+
 docker.run: docker.mongo docker.rabbitmq docker.redis
 docker.stop: docker.mongo.stop docker.rabbitmq.stop docker.redis.stop
 
@@ -63,9 +75,3 @@ generate:
 
 clean-proto:
 	rm proto/*.pb.go;
-
-run-server:
-	go run cmd/server/main.go
-
-run-client:
-	go run cmd/client/main.go

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bulutcan99/grpc_weather/dto"
+	"github.com/bulutcan99/grpc_weather/model"
 	"github.com/bulutcan99/grpc_weather/pkg/env"
 	decoder "github.com/goccy/go-json"
 	"go.uber.org/zap"
@@ -37,33 +38,58 @@ func fetchData(url string) ([]byte, error) {
 	return body, nil
 }
 
-func parseData(data []byte) (dto.WeatherData, error) {
+func parseData(data []byte) (model.WeatherData, error) {
 	var result dto.WeatherData
 	if err := decoder.Unmarshal(data, &result); err != nil {
-		return dto.WeatherData{}, err
+		return model.WeatherData{}, err
 	}
 
-	return result, nil
+	weatherData := model.WeatherData{
+		TempC:    result.Current.TempC,
+		Country:  result.Location.Country,
+		City:     result.Location.Name,
+		CityTime: result.Location.Localtime,
+	}
+
+	return weatherData, nil
 }
 
-func FetchWeather(city string) (dto.WeatherData, error) {
+func FetchWeather(city string) (model.WeatherData, error) {
 	url := buildURL(city)
 
 	body, err := fetchData(url)
 	if err != nil {
 		zap.S().Error("Failed to fetch data: ", err)
-		return dto.WeatherData{}, errors.New("failed to fetch data")
+		return model.WeatherData{}, errors.New("failed to fetch data")
 	}
 
 	data, err := parseData(body)
 	if err != nil {
 		zap.S().Error("Failed to parse data: ", err)
-		return dto.WeatherData{}, errors.New("failed to parse data")
+		return model.WeatherData{}, errors.New("failed to parse data")
 	}
 
 	return data, nil
 }
 
-func FetchDefaultWeather() (dto.WeatherData, error) {
+func FetchDefaultWeather() (model.WeatherData, error) {
 	return FetchWeather(*defaultCity)
 }
+
+// ticker := time.NewTicker(5 * time.Second)
+// go func() {
+// 	defer wg.Done()
+// 	for {
+// 		select {
+// 		case <-ctx.Done():
+// 			return
+// 		case <-ticker.C:
+// 			zap.S().Info("Fetching data...")
+// 			data, err := fetch.FetchWeather("izmir")
+// 			if err != nil {
+// 				zap.S().Error("Error while fetching data: ", err)
+// 			}
+// 			zap.S().Info("Data: ", data)
+// 		}
+// 	}
+// }()

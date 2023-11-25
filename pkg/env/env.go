@@ -12,14 +12,13 @@ import (
 
 type ENV struct {
 	ServerHost         string `env:"SERVER_HOST,required"`
-	GrpcPort           int    `env:"GRPC_PORT,required"`
+	GrpcPort           string `env:"GRPC_PORT,required"`
 	DbPort             int    `env:"DB_PORT,required"`
 	DbName             string `env:"DB_NAME,required"`
-	Collection         string `env:"COLLECTION,required"`
+	UserCollection     string `env:"USER_COLLECTION,required"`
 	WeatherUrl         string `env:"WEATHER_URL,required"`
 	WeatherApiKey      string `env:"WEATHER_API_KEY,required"`
 	DefaultWeatherCity string `env:"DEFAULT_WEATHER_CITY,required"`
-	PrefetchCount      int    `env:"PREFETCH_COUNT,required"`
 	RabbitMQPort       int    `env:"RABBITMQ_PORT,required"`
 	RabbitMQUser       string `env:"RABBITMQ_USER,required"`
 	RabbitMQPassword   string `env:"RABBITMQ_PASSWORD,required"`

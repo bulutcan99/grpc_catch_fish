@@ -2,39 +2,33 @@ package config_mongodb
 
 import (
 	"context"
-	"fmt"
 	config_builder "github.com/bulutcan99/grpc_weather/pkg/config"
 	"github.com/bulutcan99/grpc_weather/pkg/env"
-	"github.com/bulutcan99/grpc_weather/pkg/utility"
 	"sync"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
 )
 
 var (
-	doOnce   sync.Once
-	client   *mongo.Client
-	database *mongo.Database
-	DB_NAME  = &env.Env.DbName
+	doOnce  sync.Once
+	client  *mongo.Client
+	DB_NAME = &env.Env.DbName
 )
 
 type Mongo struct {
-	client   *mongo.Client
-	context  context.Context
-	database *mongo.Database
+	Client   *mongo.Client
+	Context  context.Context
+	Database string
 }
 
 func NewConnetion() *Mongo {
 	ctx := context.Background()
 	mongoCon, err := config_builder.ConnectionURLBuilder("mongo")
-	fmt.Println(mongoCon)
 	if err != nil {
 		panic(err)
 	}
-
 	doOnce.Do(func() {
 		cli, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoCon))
 		if err != nil {
@@ -45,22 +39,19 @@ func NewConnetion() *Mongo {
 		if err != nil {
 			panic(err)
 		}
-
-		database = cli.Database(*DB_NAME)
-		client = cli
 	})
 
 	zap.S().Debug("Connected to MongoDB successfully: ", mongoCon)
 
 	return &Mongo{
-		client:   client,
-		context:  ctx,
-		database: database,
+		Client:   client,
+		Context:  ctx,
+		Database: *DB_NAME,
 	}
 }
 
 func (m *Mongo) Close() {
-	err := m.client.Disconnect(m.context)
+	err := m.Client.Disconnect(m.Context)
 	if err != nil {
 		zap.S().Errorf("Error while disconnecting from MongoDB: %s", err)
 	}
@@ -75,28 +66,5 @@ func (m *Mongo) Stop() {
 }
 
 func (m *Mongo) numberSessionsInProgress() int {
-	return m.client.NumberSessionsInProgress()
-}
-
-func (m *Mongo) CreateCollectionIfNotExist(collectionName string) *mongo.Collection {
-	collectionList, err := m.database.ListCollectionNames(m.context, bson.D{{}})
-	if err != nil {
-		panic(err)
-	}
-
-	isCollectionExist, _ := utility.Contains(collectionList, collectionName, nil)
-	if isCollectionExist {
-		return m.database.Collection(collectionName)
-	}
-
-	err = m.database.CreateCollection(m.context, collectionName)
-	if err != nil {
-		panic(err)
-	}
-
-	return m.database.Collection(collectionName)
-}
-
-func (m *Mongo) GetContext() context.Context {
-	return m.context
+	return m.Client.NumberSessionsInProgress()
 }

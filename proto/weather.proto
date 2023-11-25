@@ -5,7 +5,7 @@ package weather;
 option go_package = "./pb";
 
 service WeatherService{
-    rpc Register(RequestRegister) returns (ResponseRegister){};
+    rpc Register(RequestRegister) returns (ResponseRegister);
 }
 
 message RequestRegister {
@@ -17,7 +17,26 @@ message RequestRegister {
 }
 
 message ResponseRegister{
+    string message = 1;
+    bool success = 2;
+}
+message RequestLogin {
     string username = 1;
-    string name = 2;
-    bool success = 3;
+    string password = 2;
+}
+
+message ResponseLogin{
+    bool success = 1;
+    string status = 2;
+}
+
+message RequestWeather {
+    string city = 1;
+}
+
+message ResponseWeather{
+    double temperature = 1;
+    string country = 2;
+    string city = 3;
+    string time = 4;
 }
