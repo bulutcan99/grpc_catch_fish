@@ -39,10 +39,10 @@ func NewConnetion() *Mongo {
 		if err != nil {
 			panic(err)
 		}
+		client = cli
 	})
 
 	zap.S().Debug("Connected to MongoDB successfully: ", mongoCon)
-
 	return &Mongo{
 		Client:   client,
 		Context:  ctx,

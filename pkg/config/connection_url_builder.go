@@ -9,7 +9,6 @@ var (
 	SEVER_HOST        = &env.Env.ServerHost
 	DB_PORT           = &env.Env.DbPort
 	REDIS_PORT        = &env.Env.RedisPort
-	GRPC_PORT         = &env.Env.GrpcPort
 	RABBITMQ_USER     = &env.Env.RabbitMQUser
 	RABBITMQ_PASSWORD = &env.Env.RabbitMQPassword
 	RABBITMQ_PORT     = &env.Env.RabbitMQPort
@@ -18,12 +17,6 @@ var (
 func ConnectionURLBuilder(n string) (string, error) {
 	var url string
 	switch n {
-	case "grpc":
-		url = fmt.Sprintf(
-			"%s:%d",
-			*SEVER_HOST,
-			*GRPC_PORT,
-		)
 	case "mongo":
 		url = fmt.Sprintf(
 			"mongodb://%s:%d",

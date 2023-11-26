@@ -2,7 +2,6 @@ package query
 
 import (
 	"context"
-	"fmt"
 	"github.com/bulutcan99/grpc_weather/model"
 	config_mongodb "github.com/bulutcan99/grpc_weather/pkg/config/mongodb"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -22,7 +21,6 @@ type UserRepositry struct {
 
 func NewUserRepositry(mongo *config_mongodb.Mongo, collectionName string) *UserRepositry {
 	userCollection := mongo.Client.Database(mongo.Database).Collection(collectionName)
-	fmt.Println("userCollection: ", userCollection)
 	return &UserRepositry{
 		client:         mongo.Client,
 		ctx:            mongo.Context,

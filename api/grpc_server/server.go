@@ -7,7 +7,6 @@ import (
 	pb "github.com/bulutcan99/grpc_weather/proto"
 	"github.com/bulutcan99/grpc_weather/service"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	"sync"
 	"time"
 )
@@ -23,15 +22,12 @@ type WeatherServer struct {
 	cityConn    chan struct{}
 }
 
-func NewWeatherServer(userService *service.UserService, grpcServer *grpc.Server) WeatherServer {
-	weatherServer := &WeatherServer{
+func NewWeatherServer(userService *service.UserService) *WeatherServer {
+	return &WeatherServer{
 		userService: userService,
 		mutex:       new(sync.Mutex),
 		cityConn:    make(chan struct{}),
 	}
-
-	pb.RegisterWeatherServiceServer(grpcServer, weatherServer)
-	return *weatherServer
 }
 
 func (s *WeatherServer) Register(ctx context.Context, req *pb.RequestRegister) (*pb.ResponseRegister, error) {

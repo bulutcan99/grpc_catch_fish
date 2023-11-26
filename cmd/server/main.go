@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/bulutcan99/grpc_weather/api/grpc_server"
 	"github.com/bulutcan99/grpc_weather/internal/query"
 	config_mongodb "github.com/bulutcan99/grpc_weather/pkg/config/mongodb"
@@ -10,9 +9,11 @@ import (
 	config_redis "github.com/bulutcan99/grpc_weather/pkg/config/redis"
 	"github.com/bulutcan99/grpc_weather/pkg/env"
 	"github.com/bulutcan99/grpc_weather/pkg/logger"
+	pb "github.com/bulutcan99/grpc_weather/proto"
 	"github.com/bulutcan99/grpc_weather/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
 	"net"
 	"os"
@@ -43,18 +44,23 @@ func main() {
 	defer Mongo.Close()
 	defer Redis.Close()
 	defer RabbitMQ.Close()
-	fmt.Println("----------------------")
-	fmt.Println("3131")
+
 	userRepo := query.NewUserRepositry(Mongo, Env.UserCollection)
 	userService := service.NewUserService(userRepo)
+
 	grpcServer := grpc.NewServer()
-	grpc_server.NewWeatherServer(userService, grpcServer)
-	fmt.Println("gRPC Weather Server starting on: ", Env.GrpcPort)
-	lis, err := net.Listen("tcp", Env.GrpcPort)
+	reflection.Register(grpcServer)
+
+	weatherServer := grpc_server.NewWeatherServer(userService)
+	pb.RegisterWeatherServiceServer(grpcServer, weatherServer)
+
+	lis, err := net.Listen("tcp", ":8080")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 	defer lis.Close()
+
+	zap.S().Info("gRPC Weather Server starting on: ", 8080)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
