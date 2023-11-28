@@ -18,13 +18,13 @@ const (
 type WeatherServer struct {
 	pb.UnimplementedWeatherServiceServer
 	mutex       *sync.Mutex
-	userService *service.UserService
+	UserService service.IUserService
 	cityConn    chan struct{}
 }
 
-func NewWeatherServer(userService *service.UserService) *WeatherServer {
+func NewWeatherServer(userService service.IUserService) *WeatherServer {
 	return &WeatherServer{
-		userService: userService,
+		UserService: userService,
 		mutex:       new(sync.Mutex),
 		cityConn:    make(chan struct{}),
 	}
@@ -46,7 +46,7 @@ func (s *WeatherServer) Register(ctx context.Context, req *pb.RequestRegister) (
 			City:     req.City,
 		}
 
-		userId, err := s.userService.RegisterUser(user)
+		userId, err := s.UserService.RegisterUser(user)
 		if err != nil {
 			return &pb.ResponseRegister{
 				Message: "User is not registered",

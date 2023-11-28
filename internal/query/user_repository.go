@@ -8,9 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type UserRepo interface {
-	RegisterUser(user model.User) (primitive.ObjectID, error)
-	FindUser(username string, password string) (model.User, error)
+type IUserRepo interface {
+	Register(user model.User) (primitive.ObjectID, error)
+	Find(username string, password string) (model.User, error)
 }
 
 type UserRepositry struct {
@@ -28,7 +28,7 @@ func NewUserRepositry(mongo *config_mongodb.Mongo, collectionName string) *UserR
 	}
 }
 
-func (u *UserRepositry) RegisterUser(user model.User) (primitive.ObjectID, error) {
+func (u *UserRepositry) Register(user model.User) (primitive.ObjectID, error) {
 	res, err := u.userCollection.InsertOne(u.ctx, user)
 	if err != nil {
 		return primitive.ObjectID{}, err
@@ -36,7 +36,7 @@ func (u *UserRepositry) RegisterUser(user model.User) (primitive.ObjectID, error
 	return res.InsertedID.(primitive.ObjectID), nil
 }
 
-func (u *UserRepositry) FindUser(username string, password string) (model.User, error) {
+func (u *UserRepositry) Find(username string, password string) (model.User, error) {
 	var user model.User
 	err := u.userCollection.FindOne(u.ctx, model.User{Username: username, Password: password}).Decode(&user)
 	if err != nil {
