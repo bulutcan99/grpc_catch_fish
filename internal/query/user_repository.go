@@ -9,26 +9,26 @@ import (
 )
 
 type IUserRepo interface {
-	Register(user model.User) (primitive.ObjectID, error)
-	Find(username string, password string) (model.User, error)
+	Insert(user model.User) (primitive.ObjectID, error)
+	FindOne(username string, password string) (*model.User, error)
 }
 
-type UserRepositry struct {
+type UserRepository struct {
 	client         *mongo.Client
 	ctx            context.Context
 	userCollection *mongo.Collection
 }
 
-func NewUserRepositry(mongo *config_mongodb.Mongo, collectionName string) *UserRepositry {
+func NewUserRepositry(mongo *config_mongodb.Mongo, collectionName string) *UserRepository {
 	userCollection := mongo.Client.Database(mongo.Database).Collection(collectionName)
-	return &UserRepositry{
+	return &UserRepository{
 		client:         mongo.Client,
 		ctx:            mongo.Context,
 		userCollection: userCollection,
 	}
 }
 
-func (u *UserRepositry) Register(user model.User) (primitive.ObjectID, error) {
+func (u *UserRepository) Insert(user model.User) (primitive.ObjectID, error) {
 	res, err := u.userCollection.InsertOne(u.ctx, user)
 	if err != nil {
 		return primitive.ObjectID{}, err
@@ -36,11 +36,11 @@ func (u *UserRepositry) Register(user model.User) (primitive.ObjectID, error) {
 	return res.InsertedID.(primitive.ObjectID), nil
 }
 
-func (u *UserRepositry) Find(username string, password string) (model.User, error) {
+func (u *UserRepository) FindOne(username string, password string) (*model.User, error) {
 	var user model.User
 	err := u.userCollection.FindOne(u.ctx, model.User{Username: username, Password: password}).Decode(&user)
 	if err != nil {
-		return model.User{}, err
+		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }

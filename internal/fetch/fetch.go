@@ -5,46 +5,36 @@ import (
 	"fmt"
 	"github.com/bulutcan99/grpc_weather/dto"
 	"github.com/bulutcan99/grpc_weather/model"
+	config_http "github.com/bulutcan99/grpc_weather/pkg/config/http"
 	"github.com/bulutcan99/grpc_weather/pkg/env"
 	decoder "github.com/goccy/go-json"
-	"go.uber.org/zap"
-	"io"
-	"net/http"
 )
 
 var (
-	apiURL      = &env.Env.WeatherUrl
-	apiKey      = &env.Env.WeatherApiKey
-	defaultCity = &env.Env.DefaultWeatherCity
+	apiURL = &env.Env.WeatherUrl
+	apiKey = &env.Env.WeatherApiKey
 )
 
-func buildURL(city string) string {
-	return fmt.Sprintf("%s?key=%s&q=%s&aqi=no", *apiURL, *apiKey, city)
+type FetchingDataClient struct {
+	Url    string
+	client *config_http.HttpClient
 }
 
-func fetchData(url string) ([]byte, error) {
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, err
+func NewFetchingDataClient(city string) *FetchingDataClient {
+	url := fmt.Sprintf("%s?key=%s&q=%s&aqi=no", *apiURL, *apiKey, city)
+	return &FetchingDataClient{
+		Url:    url,
+		client: config_http.NewHttpClient(),
 	}
-
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, nil
 }
 
-func parseData(data []byte) (model.WeatherData, error) {
+func (f *FetchingDataClient) parseData(data []byte) (*model.WeatherData, error) {
 	var result dto.WeatherData
 	if err := decoder.Unmarshal(data, &result); err != nil {
-		return model.WeatherData{}, err
+		return nil, err
 	}
 
-	weatherData := model.WeatherData{
+	weatherData := &model.WeatherData{
 		TempC:    result.Current.TempC,
 		Country:  result.Location.Country,
 		City:     result.Location.Name,
@@ -54,26 +44,23 @@ func parseData(data []byte) (model.WeatherData, error) {
 	return weatherData, nil
 }
 
-func FetchWeather(city string) (model.WeatherData, error) {
-	url := buildURL(city)
-
-	body, err := fetchData(url)
-	if err != nil {
-		zap.S().Error("Failed to fetch data: ", err)
-		return model.WeatherData{}, errors.New("failed to fetch data")
+func (f *FetchingDataClient) FetchWeather(url string) (*model.WeatherData, error) {
+	if f.client == nil {
+		return nil, errors.New("http client is not initialized")
 	}
 
-	data, err := parseData(body)
+	body, err := f.client.Get(url)
 	if err != nil {
-		zap.S().Error("Failed to parse data: ", err)
-		return model.WeatherData{}, errors.New("failed to parse data")
+		return nil, err
+	}
+
+	data, err := f.parseData(body)
+	if err != nil {
+		return nil, err
 	}
 
 	return data, nil
-}
 
-func FetchDefaultWeather() (model.WeatherData, error) {
-	return FetchWeather(*defaultCity)
 }
 
 // ticker := time.NewTicker(5 * time.Second)

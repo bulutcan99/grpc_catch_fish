@@ -9,6 +9,7 @@ import (
 
 type IUserService interface {
 	RegisterUser(newUser model.User) (primitive.ObjectID, error)
+	LoginUser(username string, password string) (*model.User, error)
 }
 
 type UserService struct {
@@ -29,7 +30,7 @@ func (u *UserService) RegisterUser(newUser model.User) (primitive.ObjectID, erro
 		return primitive.NilObjectID, errors.New("user with missing fields")
 	}
 
-	resultID, err := u.UserRepo.Register(newUser)
+	resultID, err := u.UserRepo.Insert(newUser)
 	if err != nil {
 		return primitive.NilObjectID, errors.New("user is not registered")
 	}
@@ -37,15 +38,19 @@ func (u *UserService) RegisterUser(newUser model.User) (primitive.ObjectID, erro
 	return resultID, nil
 }
 
-func (u *UserService) FindUser(username string, password string) (*model.User, error) {
+func (u *UserService) LoginUser(username string, password string) (*model.User, error) {
 	if username == "" || password == "" {
 		return nil, errors.New("username or password is empty")
 	}
 
-	user, err := u.UserRepo.Find(username, password)
+	user, err := u.UserRepo.FindOne(username, password)
 	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
 		return nil, errors.New("user is not found")
 	}
 
-	return &user, nil
+	return user, nil
 }

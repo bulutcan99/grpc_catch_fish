@@ -61,3 +61,27 @@ func (s *WeatherServer) Register(ctx context.Context, req *pb.RequestRegister) (
 		}, nil
 	}
 }
+
+func (s *WeatherServer) Login(ctx context.Context, req *pb.RequestLogin) (*pb.ResponseLogin, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	select {
+	case <-ctx.Done():
+		return nil, errors.New("operation cancelled due to timeout")
+	default:
+		user, err := s.UserService.LoginUser(req.Username, req.Password)
+		if err != nil {
+			return &pb.ResponseLogin{
+				Status:  "User is not found",
+				Success: false,
+			}, err
+		}
+
+		zap.S().Info("User is found with id: ", user.Username)
+		return &pb.ResponseLogin{
+			Status:  "User is found",
+			Success: true,
+		}, nil
+	}
+}
