@@ -3,6 +3,7 @@ package grpc_server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/bulutcan99/grpc_weather/model"
 	pb "github.com/bulutcan99/grpc_weather/proto"
 	"github.com/bulutcan99/grpc_weather/service"
@@ -16,17 +17,17 @@ const (
 )
 
 type WeatherServer struct {
-	pb.UnimplementedWeatherServiceServer
-	mutex       *sync.Mutex
-	UserService service.IUserService
-	cityConn    chan struct{}
+	pb.UnimplementedUserServiceServer
+	mutex    *sync.Mutex
+	Services *service.Services
+	cityConn chan struct{}
 }
 
-func NewWeatherServer(userService service.IUserService) *WeatherServer {
+func NewWeatherServer(Services *service.Services) *WeatherServer {
 	return &WeatherServer{
-		UserService: userService,
-		mutex:       new(sync.Mutex),
-		cityConn:    make(chan struct{}),
+		Services: Services,
+		mutex:    new(sync.Mutex),
+		cityConn: make(chan struct{}),
 	}
 }
 
@@ -46,7 +47,7 @@ func (s *WeatherServer) Register(ctx context.Context, req *pb.RequestRegister) (
 			City:     req.City,
 		}
 
-		userId, err := s.UserService.RegisterUser(user)
+		userId, err := s.Services.UserService.RegisterUser(user)
 		if err != nil {
 			return &pb.ResponseRegister{
 				Message: "User is not registered",
@@ -70,7 +71,7 @@ func (s *WeatherServer) Login(ctx context.Context, req *pb.RequestLogin) (*pb.Re
 	case <-ctx.Done():
 		return nil, errors.New("operation cancelled due to timeout")
 	default:
-		user, err := s.UserService.LoginUser(req.Username, req.Password)
+		user, err := s.Services.UserService.LoginUser(req.Username, req.Password)
 		if err != nil {
 			return &pb.ResponseLogin{
 				Status:  "User is not found",
@@ -78,9 +79,16 @@ func (s *WeatherServer) Login(ctx context.Context, req *pb.RequestLogin) (*pb.Re
 			}, err
 		}
 
-		zap.S().Info("User is found with id: ", user.Username)
+		if user == nil {
+			return &pb.ResponseLogin{
+				Status:  "User is not found",
+				Success: false,
+			}, errors.New("user is not found")
+		}
+
+		msg := fmt.Sprintf("Successfully logged in! User: %s", user.Username)
 		return &pb.ResponseLogin{
-			Status:  "User is found",
+			Status:  msg,
 			Success: true,
 		}, nil
 	}

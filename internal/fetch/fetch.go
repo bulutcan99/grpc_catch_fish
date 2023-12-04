@@ -40,7 +40,6 @@ func (f *FetchingDataClient) parseData(data []byte) (*model.WeatherData, error) 
 		City:     result.Location.Name,
 		CityTime: result.Location.Localtime,
 	}
-
 	return weatherData, nil
 }
 

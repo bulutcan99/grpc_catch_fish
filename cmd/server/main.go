@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/bulutcan99/grpc_weather/api/grpc_server"
 	"github.com/bulutcan99/grpc_weather/internal/query"
 	config_mongodb "github.com/bulutcan99/grpc_weather/pkg/config/mongodb"
@@ -14,28 +15,38 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"log"
 	"net"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 )
 
 var (
-	Mongo    *config_mongodb.Mongo
-	Redis    *config_redis.Redis
-	RabbitMQ *config_rabbitmq.RabbitMQ
-	Logger   *zap.Logger
-	Env      *env.ENV
+	ServerPort int
+	Services   *service.Services
+	grpcServer *grpc.Server
+	Mongo      *config_mongodb.Mongo
+	Redis      *config_redis.Redis
+	RabbitMQ   *config_rabbitmq.RabbitMQ
+	Logger     *zap.Logger
+	Env        *env.ENV
 )
 
 func Init() {
 	Env = env.ParseEnv()
+	ServerPort = Env.ServerPort
 	Logger = logger.InitLogger(Env.LogLevel)
 	Mongo = config_mongodb.NewConnetion()
 	Redis = config_redis.NewRedisConnection()
 	RabbitMQ = config_rabbitmq.NewRabbitMQConnection()
+	grpcServer = grpc.NewServer()
+	reflection.Register(grpcServer)
+	userRepo := query.NewUserRepositry(Mongo, Env.UserCollection)
+	userService := service.NewUserService(userRepo)
+
+	Services = service.RegisterServices(userService)
+	weatherServer := grpc_server.NewWeatherServer(Services)
+	pb.RegisterUserServiceServer(grpcServer, weatherServer)
 }
 
 func main() {
@@ -44,41 +55,25 @@ func main() {
 	defer Mongo.Close()
 	defer Redis.Close()
 	defer RabbitMQ.Close()
-
-	userRepo := query.NewUserRepositry(Mongo, Env.UserCollection)
-	userService := service.NewUserService(userRepo)
-
-	grpcServer := grpc.NewServer()
-	reflection.Register(grpcServer)
-
-	weatherServer := grpc_server.NewWeatherServer(userService)
-	pb.RegisterWeatherServiceServer(grpcServer, weatherServer)
-
-	lis, err := net.Listen("tcp", ":8080")
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-	}
-	defer lis.Close()
-
-	zap.S().Info("gRPC Weather Server starting on: ", 8080)
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
+	zap.S().Info("gRPC Weather Server starting on: ", Env.ServerPort)
+	grpcPort := fmt.Sprintf(":%d", ServerPort)
+	lis, err := net.Listen("tcp", grpcPort)
+	if err != nil {
+		zap.S().Fatalf("Failed to listen: %v", err)
+	}
 
 	go func() {
+		zap.S().Info("GRPC Server starting...")
 		if err := grpcServer.Serve(lis); err != nil {
-			log.Fatalf("Failed to serve: %v", err)
+			zap.S().Fatalf("Failed to serve: %v", err)
 		}
 	}()
 
 	<-ctx.Done()
-
+	zap.S().Info("Signal received, shutting down")
+	stop()
+	grpcServer.Stop()
 	zap.S().Info("Shutting down server...")
-	grpcServer.GracefulStop()
-
-	wg.Wait()
 	zap.S().Info("Server gracefully stopped")
 }

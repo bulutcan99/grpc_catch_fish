@@ -12,6 +12,7 @@ import (
 
 type ENV struct {
 	ServerHost         string `env:"SERVER_HOST,required"`
+	ServerPort         int    `env:"SERVER_PORT,required"`
 	DbPort             int    `env:"DB_PORT,required"`
 	DbName             string `env:"DB_NAME,required"`
 	UserCollection     string `env:"USER_COLLECTION,required"`

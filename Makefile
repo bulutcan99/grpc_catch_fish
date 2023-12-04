@@ -68,10 +68,10 @@ docker.redis:
 docker.redis.stop:
 	docker stop cgapp-redis
 
-generate:
+generate-proto:
 	protoc -I. --go_out=. --go_opt=paths=source_relative \
         --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-        proto/weather.proto
+        proto/user.proto
 
 clean-proto:
 	rm proto/*.pb.go;

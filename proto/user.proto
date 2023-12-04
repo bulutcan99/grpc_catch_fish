@@ -1,11 +1,12 @@
 syntax = "proto3";
 
-package weather;
+package user;
 
 option go_package = "./pb";
 
-service WeatherService{
+service UserService{
     rpc Register(RequestRegister) returns (ResponseRegister);
+    rpc Login(RequestLogin) returns (ResponseLogin);
 }
 
 message RequestRegister {
@@ -20,6 +21,7 @@ message ResponseRegister{
     string message = 1;
     bool success = 2;
 }
+
 message RequestLogin {
     string username = 1;
     string password = 2;
@@ -28,15 +30,4 @@ message RequestLogin {
 message ResponseLogin{
     bool success = 1;
     string status = 2;
-}
-
-message RequestWeather {
-    string city = 1;
-}
-
-message ResponseWeather{
-    double temperature = 1;
-    string country = 2;
-    string city = 3;
-    string time = 4;
 }
