@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	pb "github.com/bulutcan99/grpc_weather/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"time"

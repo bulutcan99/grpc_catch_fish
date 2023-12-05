@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bulutcan99/grpc_weather/model"
-	pb "github.com/bulutcan99/grpc_weather/proto"
 	"github.com/bulutcan99/grpc_weather/service"
 	"go.uber.org/zap"
 	"sync"

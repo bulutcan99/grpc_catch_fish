@@ -10,7 +10,6 @@ import (
 	config_redis "github.com/bulutcan99/grpc_weather/pkg/config/redis"
 	"github.com/bulutcan99/grpc_weather/pkg/env"
 	"github.com/bulutcan99/grpc_weather/pkg/logger"
-	pb "github.com/bulutcan99/grpc_weather/proto"
 	"github.com/bulutcan99/grpc_weather/service"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

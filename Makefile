@@ -1,26 +1,14 @@
-.PHONY: clean critic security lint test build run
-
 APP_NAME = chatapp
 BUILD_DIR = $(PWD)/build
+PROTO_DIR := proto
+PB_DIR := proto/pb
+PROTOC := protoc
+GRPC_PLUGIN := protoc-gen-go
+GRPC_GATEWAY_PLUGIN := protoc-gen-grpc-gateway
+PROTOC_OPTS := -I$(PROTO_DIR) --go_out=$(PB_DIR) --go_opt=paths=source_relative --go-grpc_out=$(PB_DIR) --go-grpc_opt=paths=source_relative
 
 clean:
 	rm -rf ./build
-
-critic:
-	gocritic check -enableAll ./...
-
-security:
-	gosec ./...
-
-lint:
-	golangci-lint run ./...
-
-test: clean critic security lint
-	go test -v -timeout 30s -coverprofile=cover.out -cover ./...
-	go tool cover -func=cover.out
-
-build: test
-	CGO_ENABLED=0 go build -ldflags="-w -s" -o $(BUILD_DIR)/$(APP_NAME) main.go
 
 run-server:
 	go run cmd/server/main.go
@@ -69,9 +57,11 @@ docker.redis.stop:
 	docker stop cgapp-redis
 
 generate-proto:
-	protoc -I. --go_out=. --go_opt=paths=source_relative \
-        --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-        proto/user.proto
+	$(PROTOC) $(PROTOC_OPTS) $(PROTO_DIR)/*.proto
 
 clean-proto:
-	rm proto/*.pb.go;
+	rm proto/pb/*.pb.go;
+
+start: generate-proto docker.run
+
+stop: docker.stop clean-proto
