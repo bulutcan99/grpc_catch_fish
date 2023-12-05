@@ -20,12 +20,14 @@ type FetchingDataClient struct {
 	client *config_http.HttpClient
 }
 
-func NewFetchingDataClient(city string) *FetchingDataClient {
-	url := fmt.Sprintf("%s?key=%s&q=%s&aqi=no", *apiURL, *apiKey, city)
+func NewFetchingDataClient() *FetchingDataClient {
 	return &FetchingDataClient{
-		Url:    url,
 		client: config_http.NewHttpClient(),
 	}
+}
+
+func (f *FetchingDataClient) GetURL(city string) string {
+	return fmt.Sprintf("%s?key=%s&q=%s&aqi=no", *apiURL, *apiKey, city)
 }
 
 func (f *FetchingDataClient) parseData(data []byte) (*model.WeatherData, error) {

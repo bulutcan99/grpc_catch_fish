@@ -16,6 +16,7 @@ type ENV struct {
 	DbPort             int    `env:"DB_PORT,required"`
 	DbName             string `env:"DB_NAME,required"`
 	UserCollection     string `env:"USER_COLLECTION,required"`
+	WeatherCollection  string `env:"WEATHER_COLLECTION,required"`
 	WeatherUrl         string `env:"WEATHER_URL,required"`
 	WeatherApiKey      string `env:"WEATHER_API_KEY,required"`
 	DefaultWeatherCity string `env:"DEFAULT_WEATHER_CITY,required"`

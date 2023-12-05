@@ -11,6 +11,7 @@ import (
 type IUserService interface {
 	RegisterUser(newUser model.User) (primitive.ObjectID, error)
 	LoginUser(username string, password string) (*model.User, error)
+	UpdateUserPassword(id primitive.ObjectID, pass string) (*model.User, error)
 }
 
 type UserService struct {

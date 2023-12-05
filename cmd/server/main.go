@@ -42,9 +42,12 @@ func Init() {
 	grpcServer = grpc.NewServer()
 	reflection.Register(grpcServer)
 	userRepo := query.NewUserRepositry(Mongo, Env.UserCollection)
-	userService := service.NewUserService(userRepo)
+	weatherRepo := query.NewWeatherRepository(Mongo, Env.WeatherCollection)
 
-	Services = service.RegisterServices(userService)
+	userService := service.NewUserService(userRepo)
+	weatherService := service.NewWeatherService(weatherRepo, userRepo)
+
+	Services = service.RegisterServices(userService, weatherService)
 	weatherServer := grpc_server.NewWeatherServer(Services)
 	pb.RegisterUserServiceServer(grpcServer, weatherServer)
 }

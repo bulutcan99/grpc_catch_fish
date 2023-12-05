@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"go.mongodb.org/mongo-driver/mongo"
 	"testing"
 
 	"github.com/bulutcan99/grpc_weather/model"
@@ -118,8 +119,16 @@ func (m *mockUserRepo) Insert(user model.User) (primitive.ObjectID, error) {
 	return primitive.NewObjectID(), m.insertError
 }
 
-func (m *mockUserRepo) FindOne(username string, password string) (*model.User, error) {
+func (m *mockUserRepo) FindOne(filter any) (*model.User, error) {
 	return m.findResult, m.findError
+}
+
+func (m *mockUserRepo) UpdateOne(filter any, update any) (*model.User, error) {
+	return m.findResult, m.findError
+}
+
+func (m *mockUserRepo) DeleteOne(filter any) (*mongo.DeleteResult, error) {
+	return nil, nil
 }
 
 func (m *mockUserRepo) setInsertError(err error) {

@@ -7,22 +7,21 @@ import (
 )
 
 type Services struct {
-	UserService *UserService
-	// WeatherService *WeatherService
+	UserService    IUserService
+	WeatherService IWeatherService
 }
 
 func RegisterServices(services ...any) *Services {
 
 	newServices := &Services{}
-
 	for _, service := range services {
 		switch getServiceType(service) {
 		case "UserService":
-			newServices.UserService = service.(*UserService)
+			newServices.UserService = service.(IUserService)
 			zap.S().Info("UserService registered")
-			// case "WeatherService":
-			// 	newServices.WeatherService = service.(*WeatherService)
-			// 	zap.S().Info("WeatherService registered")
+		case "WeatherService":
+			newServices.WeatherService = service.(IWeatherService)
+			zap.S().Info("WeatherService registered")
 		}
 	}
 	return newServices
