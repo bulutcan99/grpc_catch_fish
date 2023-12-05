@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/bulutcan99/grpc_weather/internal/query"
 	"github.com/bulutcan99/grpc_weather/model"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -43,9 +44,14 @@ func (u *UserService) LoginUser(username string, password string) (*model.User, 
 		return nil, errors.New("username or password is empty")
 	}
 
-	user, err := u.UserRepo.FindOne(username, password)
+	filter := bson.D{
+		{"username", username},
+		{"password", password},
+	}
+
+	user, err := u.UserRepo.FindOne(filter)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("user is not found")
 	}
 
 	if user == nil {
@@ -53,4 +59,40 @@ func (u *UserService) LoginUser(username string, password string) (*model.User, 
 	}
 
 	return user, nil
+}
+
+func (u *UserService) UpdateUserPassword(id primitive.ObjectID, pass string) (*model.User, error) {
+	filter := bson.D{
+		{"_id", id},
+	}
+
+	update := bson.D{
+		{"$set", bson.D{
+			{"password", pass},
+		}},
+	}
+
+	user, err := u.UserRepo.UpdateOne(filter, update)
+	if err != nil {
+		return nil, errors.New("user is not updated")
+	}
+
+	return user, nil
+}
+
+func (u *UserService) DeleteUser(id primitive.ObjectID) error {
+	if id == primitive.NilObjectID {
+		return errors.New("user id is empty")
+	}
+
+	filter := bson.D{
+		{"_id", id},
+	}
+
+	_, err := u.UserRepo.DeleteOne(filter)
+	if err != nil {
+		return errors.New("user is not deleted")
+	}
+
+	return nil
 }

@@ -7,6 +7,7 @@ option go_package = "./pb";
 service UserService{
     rpc Register(RequestRegister) returns (ResponseRegister);
     rpc Login(RequestLogin) returns (ResponseLogin);
+    rpc UpdatePassword(RequestUpdate) returns (ResponseUpdate);
 }
 
 message RequestRegister {
@@ -30,4 +31,14 @@ message RequestLogin {
 message ResponseLogin{
     bool success = 1;
     string status = 2;
+}
+
+message RequestUpdate{
+		string id = 1;
+		string password = 2;
+}
+
+message ResponseUpdate{
+		string message = 1;
+		bool success = 2;
 }

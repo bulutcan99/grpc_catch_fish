@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bulutcan99/grpc_weather/model"
+	"github.com/bulutcan99/grpc_weather/proto/pb"
 	"github.com/bulutcan99/grpc_weather/service"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
+	"strings"
 	"sync"
 	"time"
 )
@@ -85,9 +88,49 @@ func (s *WeatherServer) Login(ctx context.Context, req *pb.RequestLogin) (*pb.Re
 			}, errors.New("user is not found")
 		}
 
-		msg := fmt.Sprintf("Successfully logged in! User: %s", user.Username)
+		msg := fmt.Sprintf("Successfully logged in! User: %s", user)
 		return &pb.ResponseLogin{
 			Status:  msg,
+			Success: true,
+		}, nil
+	}
+}
+
+func (s *WeatherServer) UpdatePassword(ctx context.Context, req *pb.RequestUpdate) (*pb.ResponseUpdate, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	select {
+	case <-ctx.Done():
+		return nil, errors.New("operation cancelled due to timeout")
+	default:
+		userId, err := primitive.ObjectIDFromHex(req.Id)
+		if err != nil {
+			return &pb.ResponseUpdate{
+				Message: "User is not updated",
+				Success: false,
+			}, err
+		}
+
+		pass := strings.TrimSpace(req.Password)
+		updatedUser, err := s.Services.UserService.UpdateUserPassword(userId, pass)
+		if err != nil {
+			return &pb.ResponseUpdate{
+				Message: "User is not updated",
+				Success: false,
+			}, err
+		}
+
+		if updatedUser == nil {
+			return &pb.ResponseUpdate{
+				Message: "User is not updated",
+				Success: false,
+			}, errors.New("user is not updated")
+		}
+
+		msg := fmt.Sprintf("Successfully updated! User: %s", updatedUser.Username)
+		return &pb.ResponseUpdate{
+			Message: msg,
 			Success: true,
 		}, nil
 	}

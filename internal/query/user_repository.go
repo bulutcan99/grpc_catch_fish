@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/bulutcan99/grpc_weather/model"
 	config_mongodb "github.com/bulutcan99/grpc_weather/pkg/config/mongodb"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"time"
@@ -13,7 +12,9 @@ import (
 
 type IUserRepo interface {
 	Insert(user model.User) (primitive.ObjectID, error)
-	FindOne(username string, password string) (*model.User, error)
+	FindOne(filter any) (*model.User, error)
+	UpdateOne(filter any, update any) (*model.User, error)
+	DeleteOne(filter any) (*mongo.DeleteResult, error)
 }
 
 type UserRepository struct {
@@ -50,19 +51,46 @@ func (u *UserRepository) Insert(user model.User) (primitive.ObjectID, error) {
 	return doc.InsertedID.(primitive.ObjectID), nil
 }
 
-func (u *UserRepository) FindOne(username string, password string) (*model.User, error) {
+func (u *UserRepository) FindOne(filter any) (*model.User, error) {
 	var user model.User
-	filter := bson.D{
-		{Key: "username", Value: username},
-		{Key: "password", Value: password},
-	}
-	data := u.userCollection.FindOne(u.ctx, filter)
-	err := data.Decode(&user)
-	if err != nil && errors.Is(err, mongo.ErrNoDocuments) {
+	response := u.userCollection.FindOne(u.ctx, filter)
+	if err := response.Decode(&user); err != nil {
 		return nil, errors.New("user is not found")
 	}
+
+	return &user, nil
+}
+
+func (u *UserRepository) Find(filter any) (*mongo.Cursor, error) {
+	response, err := u.userCollection.Find(u.ctx, filter)
 	if err != nil {
 		return nil, err
 	}
+	return response, nil
+}
+
+func (u *UserRepository) UpdateOne(filter any, update any) (*model.User, error) {
+	var user model.User
+	res := u.userCollection.FindOneAndUpdate(u.ctx, filter, update)
+	if err := res.Decode(&user); err != nil {
+		return nil, errors.New("user is not updated")
+	}
+
 	return &user, nil
+}
+
+func (u *UserRepository) Update(user model.User, update any) (*mongo.UpdateResult, error) {
+	res, err := u.userCollection.UpdateOne(u.ctx, user, update)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (u *UserRepository) DeleteOne(filter any) (*mongo.DeleteResult, error) {
+	res, err := u.userCollection.DeleteOne(u.ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
