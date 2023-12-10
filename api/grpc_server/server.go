@@ -169,21 +169,29 @@ func (s *WeatherServer) GetUserCity(ctx context.Context, req *pb.RequstUserCity)
 }
 
 func (s *WeatherServer) GetWeatherData(ctx context.Context, req *pb.RequestWeatherData) (*pb.ResponseWeatherData, error) {
-	ticker := time.NewTicker(500 * time.Millisecond)
+	var wg sync.WaitGroup
+	startTime := time.Now()
+	ticker := time.NewTicker(250 * time.Millisecond)
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	weatherChan := make(chan *pb.ResponseWeatherData)
 	errChan := make(chan error)
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		city, err := s.Services.WeatherService.GetCityDataByUsername(req.Username)
 		if city == "" || err != nil {
 			city = *DEFAULT_CITY
 		}
 
 		city = strings.TrimSpace(city)
+		time.Sleep(2 * time.Second)
 		weatherData, err := s.Services.WeatherService.FetchWeatherData(city)
 		if err != nil {
 			errChan <- errors.New("weather data is empty")
+			return
 		}
 
 		weather := &pb.Weather{
@@ -195,10 +203,7 @@ func (s *WeatherServer) GetWeatherData(ctx context.Context, req *pb.RequestWeath
 
 		if weatherData.City == "" {
 			errChan <- errors.New("weather data is empty")
-			weatherChan <- &pb.ResponseWeatherData{
-				Message: "Weather data is not fetched",
-				Success: false,
-			}
+			return
 		}
 
 		msg := fmt.Sprintf("Successfully fetched! Weather Temp: %v", weatherData.TempC)
@@ -209,20 +214,113 @@ func (s *WeatherServer) GetWeatherData(ctx context.Context, req *pb.RequestWeath
 		}
 	}()
 
+	go func() {
+		wg.Wait()
+		close(weatherChan)
+		close(errChan)
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, errors.New("operation cancelled due to timeout")
 		case <-ticker.C:
-			zap.S().Info("Fetching data...")
+			elapsedTime := time.Since(startTime).Seconds()
+			elapsedTimeFormatted := fmt.Sprintf("%.2f", elapsedTime)
+			zap.S().Infof("Fetching data... Elapsed Time: %s seconds", elapsedTimeFormatted)
 		case err := <-errChan:
 			return &pb.ResponseWeatherData{
 				Message: "Error while fetching data",
 				Success: false,
 			}, err
 		case weather := <-weatherChan:
+			zap.S().Info("Data successfully fetched!")
 			return weather, nil
+		}
+	}
+}
 
+func (s *WeatherServer) GetWeatherDataStream(req *pb.RequestWeatherData, stream pb.WeatherService_GetWeatherDataStreamServer) error {
+	var wg sync.WaitGroup
+	startTime := time.Now()
+	ticker := time.NewTicker(2 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	weatherChan := make(chan *pb.ResponseStreamWeatherData)
+	errChan := make(chan error)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("operation cancelled due to timeout")
+		case <-ticker.C:
+			zap.S().Info("Ticker ticked!")
+			elapsedTime := time.Since(startTime).Seconds()
+			elapsedTimeFormatted := fmt.Sprintf("%.2f", elapsedTime)
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				city, err := s.Services.WeatherService.GetCityDataByUsername(req.Username)
+				if city == "" || err != nil {
+					city = *DEFAULT_CITY
+				}
+
+				city = strings.TrimSpace(city)
+				time.Sleep(2 * time.Second)
+				weatherData, err := s.Services.WeatherService.FetchWeatherData(city)
+				if err != nil {
+					errChan <- errors.New("weather data is empty")
+					return
+				}
+
+				weather := &pb.Weather{
+					City:        weatherData.City,
+					Country:     weatherData.Country,
+					Temperature: weatherData.TempC,
+					CityTime:    weatherData.CityTime,
+				}
+
+				if weatherData.City == "" {
+					errChan <- errors.New("weather data is empty")
+					return
+				}
+
+				msg := fmt.Sprintf("Successfully fetched! Weather Temp: %v", weatherData.TempC)
+				weatherChan <- &pb.ResponseStreamWeatherData{
+					Weather: weather,
+					Message: msg,
+					Success: true,
+					Time:    elapsedTimeFormatted,
+				}
+			}()
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				data := <-weatherChan
+				if data == nil {
+					return
+				}
+				if err := stream.Send(data); err != nil {
+					errChan <- err
+				}
+				zap.S().Info("Data successfully sended!")
+			}()
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				wg.Wait()
+				close(weatherChan)
+				close(errChan)
+			}()
+
+		case err := <-errChan:
+			return err
+		case <-ctx.Done():
+			return errors.New("operation finished due to timeout")
 		}
 	}
 }

@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WeatherServiceClient interface {
-	// rpc GetWeatherStream(GetWeatherRequest) returns (stream GetWeatherResponse) {}
+	GetWeatherDataStream(ctx context.Context, in *RequestWeatherData, opts ...grpc.CallOption) (WeatherService_GetWeatherDataStreamClient, error)
 	GetWeatherData(ctx context.Context, in *RequestWeatherData, opts ...grpc.CallOption) (*ResponseWeatherData, error)
 	GetUserCity(ctx context.Context, in *RequstUserCity, opts ...grpc.CallOption) (*ResponseUserCity, error)
 }
@@ -33,6 +33,38 @@ type weatherServiceClient struct {
 
 func NewWeatherServiceClient(cc grpc.ClientConnInterface) WeatherServiceClient {
 	return &weatherServiceClient{cc}
+}
+
+func (c *weatherServiceClient) GetWeatherDataStream(ctx context.Context, in *RequestWeatherData, opts ...grpc.CallOption) (WeatherService_GetWeatherDataStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &WeatherService_ServiceDesc.Streams[0], "/weather.WeatherService/GetWeatherDataStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &weatherServiceGetWeatherDataStreamClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type WeatherService_GetWeatherDataStreamClient interface {
+	Recv() (*ResponseStreamWeatherData, error)
+	grpc.ClientStream
+}
+
+type weatherServiceGetWeatherDataStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *weatherServiceGetWeatherDataStreamClient) Recv() (*ResponseStreamWeatherData, error) {
+	m := new(ResponseStreamWeatherData)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func (c *weatherServiceClient) GetWeatherData(ctx context.Context, in *RequestWeatherData, opts ...grpc.CallOption) (*ResponseWeatherData, error) {
@@ -57,7 +89,7 @@ func (c *weatherServiceClient) GetUserCity(ctx context.Context, in *RequstUserCi
 // All implementations must embed UnimplementedWeatherServiceServer
 // for forward compatibility
 type WeatherServiceServer interface {
-	// rpc GetWeatherStream(GetWeatherRequest) returns (stream GetWeatherResponse) {}
+	GetWeatherDataStream(*RequestWeatherData, WeatherService_GetWeatherDataStreamServer) error
 	GetWeatherData(context.Context, *RequestWeatherData) (*ResponseWeatherData, error)
 	GetUserCity(context.Context, *RequstUserCity) (*ResponseUserCity, error)
 	mustEmbedUnimplementedWeatherServiceServer()
@@ -67,6 +99,9 @@ type WeatherServiceServer interface {
 type UnimplementedWeatherServiceServer struct {
 }
 
+func (UnimplementedWeatherServiceServer) GetWeatherDataStream(*RequestWeatherData, WeatherService_GetWeatherDataStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetWeatherDataStream not implemented")
+}
 func (UnimplementedWeatherServiceServer) GetWeatherData(context.Context, *RequestWeatherData) (*ResponseWeatherData, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetWeatherData not implemented")
 }
@@ -84,6 +119,27 @@ type UnsafeWeatherServiceServer interface {
 
 func RegisterWeatherServiceServer(s grpc.ServiceRegistrar, srv WeatherServiceServer) {
 	s.RegisterService(&WeatherService_ServiceDesc, srv)
+}
+
+func _WeatherService_GetWeatherDataStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(RequestWeatherData)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(WeatherServiceServer).GetWeatherDataStream(m, &weatherServiceGetWeatherDataStreamServer{stream})
+}
+
+type WeatherService_GetWeatherDataStreamServer interface {
+	Send(*ResponseStreamWeatherData) error
+	grpc.ServerStream
+}
+
+type weatherServiceGetWeatherDataStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *weatherServiceGetWeatherDataStreamServer) Send(m *ResponseStreamWeatherData) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 func _WeatherService_GetWeatherData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -138,6 +194,12 @@ var WeatherService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _WeatherService_GetUserCity_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetWeatherDataStream",
+			Handler:       _WeatherService_GetWeatherDataStream_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "weather.proto",
 }
