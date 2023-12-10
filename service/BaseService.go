@@ -1,10 +1,25 @@
 package service
 
 import (
+	"github.com/bulutcan99/grpc_weather/model"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"reflect"
 
 	"go.uber.org/zap"
 )
+
+type IUserService interface {
+	RegisterUser(newUser model.User) (primitive.ObjectID, error)
+	LoginUser(username string, password string) (*model.User, error)
+	UpdateUserPassword(id primitive.ObjectID, pass string) (*model.User, error)
+}
+
+type IWeatherService interface {
+	FetchWeatherData(city string) (*model.WeatherData, error)
+	UpdateWeatherData(weatherData *model.WeatherData) error
+	GetWeatherData(city string) (*model.WeatherData, error)
+	GetCityDataByUsername(username string) (string, error)
+}
 
 type Services struct {
 	UserService    IUserService

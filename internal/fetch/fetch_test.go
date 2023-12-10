@@ -7,11 +7,10 @@ import (
 )
 
 func TestFetch_Weather(t *testing.T) {
-	client := NewFetchingDataClient("Istanbul")
-	fmt.Println("Cl: ", client)
-	data, err := client.FetchWeather(client.Url)
+	client := NewFetchingDataClient()
+	data, err := client.FetchWeather("https://api.weatherapi.com/v1/current.json?q=Istanbul&lang=en&key=290ea74ca97c4725824222051230912")
 	if err != nil {
 		errors.New("Error while getting data!")
 	}
-	fmt.Println("Data:", &data, data)
+	fmt.Println("Data:", data)
 }

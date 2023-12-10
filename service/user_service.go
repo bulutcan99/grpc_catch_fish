@@ -2,23 +2,25 @@ package service
 
 import (
 	"errors"
-	"github.com/bulutcan99/grpc_weather/internal/query"
 	"github.com/bulutcan99/grpc_weather/model"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type IUserService interface {
-	RegisterUser(newUser model.User) (primitive.ObjectID, error)
-	LoginUser(username string, password string) (*model.User, error)
-	UpdateUserPassword(id primitive.ObjectID, pass string) (*model.User, error)
+type IUserRepo interface {
+	Insert(user model.User) (primitive.ObjectID, error)
+	FindOne(filter any, opts *options.FindOneOptions) (*model.User, error)
+	UpdateOne(filter any, update any) (*model.User, error)
+	DeleteOne(filter any) (*mongo.DeleteResult, error)
 }
 
 type UserService struct {
-	UserRepo query.IUserRepo
+	UserRepo IUserRepo
 }
 
-func NewUserService(userRepo query.IUserRepo) *UserService {
+func NewUserService(userRepo IUserRepo) *UserService {
 	return &UserService{
 		UserRepo: userRepo,
 	}
@@ -50,7 +52,10 @@ func (u *UserService) LoginUser(username string, password string) (*model.User, 
 		{"password", password},
 	}
 
-	user, err := u.UserRepo.FindOne(filter)
+	opts := options.FindOne().SetProjection(bson.M{
+		"user_id": 1,
+	})
+	user, err := u.UserRepo.FindOne(filter, opts)
 	if err != nil {
 		return nil, errors.New("user is not found")
 	}

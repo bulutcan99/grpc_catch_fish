@@ -62,6 +62,6 @@ generate-proto:
 clean-proto:
 	rm proto/pb/*.pb.go;
 
-start-server: generate-proto docker.run
+build: generate-proto docker.run
 
-stop-server: docker.stop clean-proto
+stop: docker.stop clean-proto

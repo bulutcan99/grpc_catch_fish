@@ -50,6 +50,7 @@ func Init() {
 	Services = service.RegisterServices(userService, weatherService)
 	weatherServer := grpc_server.NewWeatherServer(Services)
 	pb.RegisterUserServiceServer(grpcServer, weatherServer)
+	pb.RegisterWeatherServiceServer(grpcServer, weatherServer)
 }
 
 func main() {

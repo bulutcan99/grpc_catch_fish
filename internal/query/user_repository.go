@@ -7,15 +7,9 @@ import (
 	config_mongodb "github.com/bulutcan99/grpc_weather/pkg/config/mongodb"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
-
-type IUserRepo interface {
-	Insert(user model.User) (primitive.ObjectID, error)
-	FindOne(filter any) (*model.User, error)
-	UpdateOne(filter any, update any) (*model.User, error)
-	DeleteOne(filter any) (*mongo.DeleteResult, error)
-}
 
 type UserRepository struct {
 	client         *mongo.Client
@@ -51,9 +45,9 @@ func (u *UserRepository) Insert(user model.User) (primitive.ObjectID, error) {
 	return doc.InsertedID.(primitive.ObjectID), nil
 }
 
-func (u *UserRepository) FindOne(filter any) (*model.User, error) {
+func (u *UserRepository) FindOne(filter any, opts *options.FindOneOptions) (*model.User, error) {
 	var user model.User
-	response := u.userCollection.FindOne(u.ctx, filter)
+	response := u.userCollection.FindOne(u.ctx, filter, opts)
 	if err := response.Decode(&user); err != nil {
 		return nil, errors.New("user is not found")
 	}
@@ -77,14 +71,6 @@ func (u *UserRepository) UpdateOne(filter any, update any) (*model.User, error) 
 	}
 
 	return &user, nil
-}
-
-func (u *UserRepository) Update(user model.User, update any) (*mongo.UpdateResult, error) {
-	res, err := u.userCollection.UpdateOne(u.ctx, user, update)
-	if err != nil {
-		return nil, err
-	}
-	return res, nil
 }
 
 func (u *UserRepository) DeleteOne(filter any) (*mongo.DeleteResult, error) {

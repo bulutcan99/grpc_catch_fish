@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-type IWeatherRepo interface {
-	InsertOrUpdate(filter any, update any) *mongo.SingleResult
-	FindOne(filter any) *mongo.SingleResult
-}
-
 type WeatherRepository struct {
 	client            *mongo.Client
 	ctx               context.Context

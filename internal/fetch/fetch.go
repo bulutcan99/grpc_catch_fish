@@ -11,12 +11,11 @@ import (
 )
 
 var (
-	apiURL = &env.Env.WeatherUrl
-	apiKey = &env.Env.WeatherApiKey
+	API_URL = &env.Env.WeatherUrl
+	API_KEY = &env.Env.WeatherApiKey
 )
 
 type FetchingDataClient struct {
-	Url    string
 	client *config_http.HttpClient
 }
 
@@ -27,7 +26,8 @@ func NewFetchingDataClient() *FetchingDataClient {
 }
 
 func (f *FetchingDataClient) GetURL(city string) string {
-	return fmt.Sprintf("%s?key=%s&q=%s&aqi=no", *apiURL, *apiKey, city)
+	url := fmt.Sprintf("%s?q=%s&lang=en&key=%s", *API_URL, city, *API_KEY)
+	return url
 }
 
 func (f *FetchingDataClient) parseData(data []byte) (*model.WeatherData, error) {
