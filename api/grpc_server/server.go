@@ -313,13 +313,13 @@ func (s *WeatherServer) GetWeatherDataStream(req *pb.RequestWeatherData, stream 
 			go func() {
 				defer wg.Done()
 				wg.Wait()
-				close(weatherChan)
-				close(errChan)
 			}()
 
 		case err := <-errChan:
 			return err
 		case <-ctx.Done():
+			close(weatherChan)
+			close(errChan)
 			return errors.New("operation finished due to timeout")
 		}
 	}
