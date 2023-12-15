@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WeatherServiceClient interface {
-	GetWeatherDataByLatLong(ctx context.Context, opts ...grpc.CallOption) (WeatherService_GetWeatherDataByLatLongClient, error)
+	GetWeatherDataByLatLongStream(ctx context.Context, opts ...grpc.CallOption) (WeatherService_GetWeatherDataByLatLongStreamClient, error)
 	GetWeatherDataStream(ctx context.Context, in *RequestWeatherData, opts ...grpc.CallOption) (WeatherService_GetWeatherDataStreamClient, error)
 	GetWeatherData(ctx context.Context, in *RequestWeatherData, opts ...grpc.CallOption) (*ResponseWeatherData, error)
 	GetUserCity(ctx context.Context, in *RequstUserCity, opts ...grpc.CallOption) (*ResponseUserCity, error)
@@ -36,30 +36,30 @@ func NewWeatherServiceClient(cc grpc.ClientConnInterface) WeatherServiceClient {
 	return &weatherServiceClient{cc}
 }
 
-func (c *weatherServiceClient) GetWeatherDataByLatLong(ctx context.Context, opts ...grpc.CallOption) (WeatherService_GetWeatherDataByLatLongClient, error) {
-	stream, err := c.cc.NewStream(ctx, &WeatherService_ServiceDesc.Streams[0], "/weather.WeatherService/GetWeatherDataByLatLong", opts...)
+func (c *weatherServiceClient) GetWeatherDataByLatLongStream(ctx context.Context, opts ...grpc.CallOption) (WeatherService_GetWeatherDataByLatLongStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &WeatherService_ServiceDesc.Streams[0], "/weather.WeatherService/GetWeatherDataByLatLongStream", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &weatherServiceGetWeatherDataByLatLongClient{stream}
+	x := &weatherServiceGetWeatherDataByLatLongStreamClient{stream}
 	return x, nil
 }
 
-type WeatherService_GetWeatherDataByLatLongClient interface {
-	Send(*RequestUserByLatLong) error
+type WeatherService_GetWeatherDataByLatLongStreamClient interface {
+	Send(*RequestStreamUserByLatLong) error
 	Recv() (*ResponseStreamUserLatLong, error)
 	grpc.ClientStream
 }
 
-type weatherServiceGetWeatherDataByLatLongClient struct {
+type weatherServiceGetWeatherDataByLatLongStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *weatherServiceGetWeatherDataByLatLongClient) Send(m *RequestUserByLatLong) error {
+func (x *weatherServiceGetWeatherDataByLatLongStreamClient) Send(m *RequestStreamUserByLatLong) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *weatherServiceGetWeatherDataByLatLongClient) Recv() (*ResponseStreamUserLatLong, error) {
+func (x *weatherServiceGetWeatherDataByLatLongStreamClient) Recv() (*ResponseStreamUserLatLong, error) {
 	m := new(ResponseStreamUserLatLong)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (c *weatherServiceClient) GetUserCity(ctx context.Context, in *RequstUserCi
 // All implementations must embed UnimplementedWeatherServiceServer
 // for forward compatibility
 type WeatherServiceServer interface {
-	GetWeatherDataByLatLong(WeatherService_GetWeatherDataByLatLongServer) error
+	GetWeatherDataByLatLongStream(WeatherService_GetWeatherDataByLatLongStreamServer) error
 	GetWeatherDataStream(*RequestWeatherData, WeatherService_GetWeatherDataStreamServer) error
 	GetWeatherData(context.Context, *RequestWeatherData) (*ResponseWeatherData, error)
 	GetUserCity(context.Context, *RequstUserCity) (*ResponseUserCity, error)
@@ -132,8 +132,8 @@ type WeatherServiceServer interface {
 type UnimplementedWeatherServiceServer struct {
 }
 
-func (UnimplementedWeatherServiceServer) GetWeatherDataByLatLong(WeatherService_GetWeatherDataByLatLongServer) error {
-	return status.Errorf(codes.Unimplemented, "method GetWeatherDataByLatLong not implemented")
+func (UnimplementedWeatherServiceServer) GetWeatherDataByLatLongStream(WeatherService_GetWeatherDataByLatLongStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetWeatherDataByLatLongStream not implemented")
 }
 func (UnimplementedWeatherServiceServer) GetWeatherDataStream(*RequestWeatherData, WeatherService_GetWeatherDataStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method GetWeatherDataStream not implemented")
@@ -157,26 +157,26 @@ func RegisterWeatherServiceServer(s grpc.ServiceRegistrar, srv WeatherServiceSer
 	s.RegisterService(&WeatherService_ServiceDesc, srv)
 }
 
-func _WeatherService_GetWeatherDataByLatLong_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(WeatherServiceServer).GetWeatherDataByLatLong(&weatherServiceGetWeatherDataByLatLongServer{stream})
+func _WeatherService_GetWeatherDataByLatLongStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(WeatherServiceServer).GetWeatherDataByLatLongStream(&weatherServiceGetWeatherDataByLatLongStreamServer{stream})
 }
 
-type WeatherService_GetWeatherDataByLatLongServer interface {
+type WeatherService_GetWeatherDataByLatLongStreamServer interface {
 	Send(*ResponseStreamUserLatLong) error
-	Recv() (*RequestUserByLatLong, error)
+	Recv() (*RequestStreamUserByLatLong, error)
 	grpc.ServerStream
 }
 
-type weatherServiceGetWeatherDataByLatLongServer struct {
+type weatherServiceGetWeatherDataByLatLongStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *weatherServiceGetWeatherDataByLatLongServer) Send(m *ResponseStreamUserLatLong) error {
+func (x *weatherServiceGetWeatherDataByLatLongStreamServer) Send(m *ResponseStreamUserLatLong) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *weatherServiceGetWeatherDataByLatLongServer) Recv() (*RequestUserByLatLong, error) {
-	m := new(RequestUserByLatLong)
+func (x *weatherServiceGetWeatherDataByLatLongStreamServer) Recv() (*RequestStreamUserByLatLong, error) {
+	m := new(RequestStreamUserByLatLong)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -258,8 +258,8 @@ var WeatherService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "GetWeatherDataByLatLong",
-			Handler:       _WeatherService_GetWeatherDataByLatLong_Handler,
+			StreamName:    "GetWeatherDataByLatLongStream",
+			Handler:       _WeatherService_GetWeatherDataByLatLongStream_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

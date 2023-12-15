@@ -69,7 +69,7 @@ func (c *WeatherClient) Close() error {
 
 func (c *WeatherClient) GetWeatherDataByLatLong() error {
 	ctx := context.Background()
-	stream, err := c.client.GetWeatherDataByLatLong(ctx)
+	stream, err := c.client.GetWeatherDataByLatLongStream(ctx)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (c *WeatherClient) GetWeatherDataByLatLong() error {
 	}
 }
 
-func (c *WeatherClient) WeatherData(stream pb.WeatherService_GetWeatherDataByLatLongClient, errChan chan error, wg *sync.WaitGroup) {
+func (c *WeatherClient) WeatherData(stream pb.WeatherService_GetWeatherDataByLatLongStreamClient, errChan chan error, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for {
 		select {
@@ -120,7 +120,7 @@ func (c *WeatherClient) WeatherData(stream pb.WeatherService_GetWeatherDataByLat
 	}
 }
 
-func (c *WeatherClient) City(stream pb.WeatherService_GetWeatherDataByLatLongClient, errChan chan error, wg *sync.WaitGroup) {
+func (c *WeatherClient) City(stream pb.WeatherService_GetWeatherDataByLatLongStreamClient, errChan chan error, wg *sync.WaitGroup) {
 	defer wg.Done()
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -146,7 +146,7 @@ func (c *WeatherClient) City(stream pb.WeatherService_GetWeatherDataByLatLongCli
 		select {
 		case user := <-userCh:
 			zap.S().Info("Fetching data...")
-			err := stream.Send(&pb.RequestUserByLatLong{
+			err := stream.Send(&pb.RequestStreamUserByLatLong{
 				City: user.City,
 			})
 			if err != nil {

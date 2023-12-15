@@ -5,13 +5,13 @@ package weather;
 option go_package = "./pb";
 
 service WeatherService {
-    rpc GetWeatherDataByLatLong(stream RequestUserByLatLong) returns (stream ResponseStreamUserLatLong) {}
+    rpc GetWeatherDataByLatLongStream(stream RequestStreamUserByLatLong) returns (stream ResponseStreamUserLatLong) {}
     rpc GetWeatherDataStream(RequestWeatherData) returns (stream ResponseStreamWeatherData) {}
     rpc GetWeatherData(RequestWeatherData) returns (ResponseWeatherData) {}
     rpc GetUserCity(RequstUserCity) returns (ResponseUserCity) {}
 }
 
-message RequestUserByLatLong{
+message RequestStreamUserByLatLong{
     string city = 1;
 }
 

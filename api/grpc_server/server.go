@@ -325,11 +325,10 @@ func (s *WeatherServer) GetWeatherDataStream(req *pb.RequestWeatherData, stream 
 	}
 }
 
-func (s *WeatherServer) GetWeatherDataByLatLong(req *pb.RequestUserByLatLong, stream pb.WeatherService_GetWeatherDataByLatLongServer) error {
+func (s *WeatherServer) GetWeatherDataByLatLongStream(stream pb.WeatherService_GetWeatherDataByLatLongStreamServer) error {
 	var wg sync.WaitGroup
-	startTime := time.Now()
-	ticker := time.NewTicker(2 * time.Second)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ticker := time.NewTicker(5 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	weatherChan := make(chan *pb.ResponseStreamUserLatLong)
 	errChan := make(chan error)
@@ -340,14 +339,17 @@ func (s *WeatherServer) GetWeatherDataByLatLong(req *pb.RequestUserByLatLong, st
 			return errors.New("operation cancelled due to timeout")
 		case <-ticker.C:
 			zap.S().Info("Ticker ticked!")
-			elapsedTime := time.Since(startTime).Seconds()
-			elapsedTimeFormatted := fmt.Sprintf("%.2f", elapsedTime)
 
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
+				data, err := stream.Recv()
+				if err != nil {
+					errChan <- err
+					return
+				}
 
-				city := req.City
+				city := data.City
 				if city == "" {
 					city = *DEFAULT_CITY
 				}
@@ -371,7 +373,6 @@ func (s *WeatherServer) GetWeatherDataByLatLong(req *pb.RequestUserByLatLong, st
 					return
 				}
 
-				msg := fmt.Sprintf("Successfully fetched! Weather Temp: %v", weatherData.TempC)
 				weatherChan <- &pb.ResponseStreamUserLatLong{
 					City:        city,
 					Temperature: weather.Temperature,
@@ -390,6 +391,7 @@ func (s *WeatherServer) GetWeatherDataByLatLong(req *pb.RequestUserByLatLong, st
 					errChan <- err
 				}
 				zap.S().Info("Data successfully sended!")
+				zap.S().Info("Data: ", data)
 			}()
 
 			wg.Add(1)

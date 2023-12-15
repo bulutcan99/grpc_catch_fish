@@ -19,7 +19,7 @@ type ENV struct {
 	WeatherCollection  string `env:"WEATHER_COLLECTION,required"`
 	WeatherUrl         string `env:"WEATHER_URL,required"`
 	WeatherApiKey      string `env:"WEATHER_API_KEY,required"`
-	CityUrl            string `env:"CITY_URL,required"`
+	CityUrl            string `env:"CITY_API_URL,required"`
 	CityApiKey         string `env:"CITY_API_KEY,required"`
 	DefaultWeatherCity string `env:"DEFAULT_WEATHER_CITY,required"`
 	RabbitMQPort       int    `env:"RABBITMQ_PORT,required"`
