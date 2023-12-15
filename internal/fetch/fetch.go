@@ -11,8 +11,10 @@ import (
 )
 
 var (
-	API_URL = &env.Env.WeatherUrl
-	API_KEY = &env.Env.WeatherApiKey
+	API_URL  = &env.Env.WeatherUrl
+	API_KEY  = &env.Env.WeatherApiKey
+	CITY_URL = &env.Env.CityUrl
+	CITY_KEY = &env.Env.CityApiKey
 )
 
 type FetchingDataClient struct {
@@ -23,6 +25,29 @@ func NewFetchingDataClient() *FetchingDataClient {
 	return &FetchingDataClient{
 		client: config_http.NewHttpClient(),
 	}
+}
+
+func (f *FetchingDataClient) GetCityUrl(lat, long float64) string {
+	url := fmt.Sprintf("%s?lat=%f&lon=%f&apiKey=%s", *CITY_URL, lat, long, *CITY_KEY)
+	return url
+}
+
+func (f *FetchingDataClient) FetchCity(url string) (string, error) {
+	if f.client == nil {
+		return "", errors.New("http client is not initialized")
+	}
+
+	body, err := f.client.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	var result dto.FetchedCityData
+	if err := decoder.Unmarshal(body, &result); err != nil {
+		return "", err
+	}
+
+	return result.Features[0].Properties.City, nil
 }
 
 func (f *FetchingDataClient) GetURL(city string) string {

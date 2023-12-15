@@ -22,9 +22,9 @@ import (
 )
 
 var (
+	grpcServer *grpc.Server
 	ServerPort int
 	Services   *service.Services
-	grpcServer *grpc.Server
 	Mongo      *config_mongodb.Mongo
 	Redis      *config_redis.Redis
 	RabbitMQ   *config_rabbitmq.RabbitMQ

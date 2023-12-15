@@ -324,3 +324,86 @@ func (s *WeatherServer) GetWeatherDataStream(req *pb.RequestWeatherData, stream 
 		}
 	}
 }
+
+func (s *WeatherServer) GetWeatherDataByLatLong(req *pb.RequestUserByLatLong, stream pb.WeatherService_GetWeatherDataByLatLongServer) error {
+	var wg sync.WaitGroup
+	startTime := time.Now()
+	ticker := time.NewTicker(2 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	weatherChan := make(chan *pb.ResponseStreamUserLatLong)
+	errChan := make(chan error)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("operation cancelled due to timeout")
+		case <-ticker.C:
+			zap.S().Info("Ticker ticked!")
+			elapsedTime := time.Since(startTime).Seconds()
+			elapsedTimeFormatted := fmt.Sprintf("%.2f", elapsedTime)
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+
+				city := req.City
+				if city == "" {
+					city = *DEFAULT_CITY
+				}
+
+				city = strings.TrimSpace(city)
+				weatherData, err := s.Services.WeatherService.FetchWeatherData(city)
+				if err != nil {
+					errChan <- errors.New("weather data is empty")
+					return
+				}
+
+				weather := &pb.Weather{
+					City:        weatherData.City,
+					Country:     weatherData.Country,
+					Temperature: weatherData.TempC,
+					CityTime:    weatherData.CityTime,
+				}
+
+				if weatherData.City == "" {
+					errChan <- errors.New("weather data is empty")
+					return
+				}
+
+				msg := fmt.Sprintf("Successfully fetched! Weather Temp: %v", weatherData.TempC)
+				weatherChan <- &pb.ResponseStreamUserLatLong{
+					City:        city,
+					Temperature: weather.Temperature,
+					Status:      false,
+				}
+			}()
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				data := <-weatherChan
+				if data == nil {
+					return
+				}
+				if err := stream.Send(data); err != nil {
+					errChan <- err
+				}
+				zap.S().Info("Data successfully sended!")
+			}()
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				wg.Wait()
+			}()
+
+		case err := <-errChan:
+			return err
+		case <-ctx.Done():
+			close(weatherChan)
+			close(errChan)
+			return errors.New("operation finished due to timeout")
+		}
+	}
+}
