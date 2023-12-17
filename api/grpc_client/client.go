@@ -145,7 +145,7 @@ func (c *WeatherClient) City(stream pb.WeatherService_GetWeatherDataByLatLongStr
 	for {
 		select {
 		case user := <-userCh:
-			zap.S().Info("Fetching data...")
+			zap.S().Info("Getting city...")
 			err := stream.Send(&pb.RequestStreamUserByLatLong{
 				City: user.City,
 			})
@@ -155,4 +155,16 @@ func (c *WeatherClient) City(stream pb.WeatherService_GetWeatherDataByLatLongStr
 			}
 		}
 	}
+}
+
+func (c *WeatherClient) GetWeatherDataStream(ctx context.Context, in *pb.RequestWeatherData, opts ...grpc.CallOption) (pb.WeatherService_GetWeatherDataStreamClient, error) {
+	return c.client.GetWeatherDataStream(ctx, in, opts...)
+}
+
+func (c *WeatherClient) GetWeatherData(ctx context.Context, in *pb.RequestWeatherData, opts ...grpc.CallOption) (*pb.ResponseWeatherData, error) {
+	return c.client.GetWeatherData(ctx, in, opts...)
+}
+
+func (c *WeatherClient) GetUserCity(ctx context.Context, in *pb.RequstUserCity, opts ...grpc.CallOption) (*pb.ResponseUserCity, error) {
+	return c.client.GetUserCity(ctx, in, opts...)
 }

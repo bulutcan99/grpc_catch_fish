@@ -32,6 +32,16 @@ var (
 	Env        *env.ENV
 )
 
+func unaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	Logger.Info("gRPC method called: " + info.FullMethod)
+	return handler(ctx, req)
+}
+
+func streamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	Logger.Info("gRPC stream method called: " + info.FullMethod)
+	return handler(srv, ss)
+}
+
 func Init() {
 	Env = env.ParseEnv()
 	ServerPort = Env.ServerPort
@@ -39,7 +49,10 @@ func Init() {
 	Mongo = config_mongodb.NewConnetion()
 	Redis = config_redis.NewRedisConnection()
 	RabbitMQ = config_rabbitmq.NewRabbitMQConnection()
-	grpcServer = grpc.NewServer()
+	grpcServer = grpc.NewServer(
+		grpc.UnaryInterceptor(unaryInterceptor),
+		grpc.StreamInterceptor(streamInterceptor),
+	)
 	reflection.Register(grpcServer)
 	userRepo := query.NewUserRepositry(Mongo, Env.UserCollection)
 	weatherRepo := query.NewWeatherRepository(Mongo, Env.WeatherCollection)
